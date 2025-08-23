@@ -1,6 +1,7 @@
 package com.example.rate_limiter;
 
-import com.example.rate_limiter.filter.FixedWindowFilter;
+import com.example.rate_limiter.filter.FixedWindowCounterFilter;
+import com.example.rate_limiter.filter.SlidingWindowLogFilter;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -14,10 +15,18 @@ public class RateLimiterApplication {
 	}
 
 	@Bean
-	public FilterRegistrationBean<FixedWindowFilter> rateLimitingFilter() {
-		FilterRegistrationBean<FixedWindowFilter> registrationBean = new FilterRegistrationBean<>();
-		registrationBean.setFilter(new FixedWindowFilter());
-		registrationBean.addUrlPatterns("/api/v1/fixedWindowFilter/*"); // Register filter for API endpoints
+	public FilterRegistrationBean<FixedWindowCounterFilter> rateLimitingFilter() {
+		FilterRegistrationBean<FixedWindowCounterFilter> registrationBean = new FilterRegistrationBean<>();
+		registrationBean.setFilter(new FixedWindowCounterFilter());
+		registrationBean.addUrlPatterns("/api/v1/fixedWindowCounter/*"); // Register filter for API endpoints
+		return registrationBean;
+	}
+
+	@Bean
+	public FilterRegistrationBean<SlidingWindowLogFilter> anotherFilter() {
+		FilterRegistrationBean<SlidingWindowLogFilter> registrationBean = new FilterRegistrationBean<>();
+		registrationBean.setFilter(new SlidingWindowLogFilter());
+		registrationBean.addUrlPatterns("/api/v1/slidingWindowLog/*");
 		return registrationBean;
 	}
 }

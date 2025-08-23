@@ -12,12 +12,30 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/*
+Concept: Split time into fixed windows (e.g., each minute) and count requests per window.
+
+How it works:
+    Each window resets the counter to zero.
+    If count exceeds the limit, requests are denied until the window resets.
+
+Use case: Easy to implement for API calls per second/minute/hour.
+
+Pros: Simple logic and memory usage.
+
+Cons: Problem with boundary spikes (e.g., 10 requests at end of one window + 10 at start of next window → 20 in quick succession).
+
+Example in real life: Web APIs like 100 requests per minute.
+*/
+
 //@Component
-public class FixedWindowFilter implements Filter {
+public class FixedWindowCounterFilter implements Filter {
+
+//    TODO : requestCountsPerIpAddress will keep on increasing and will give outOFbounds error if more requests, Handle this in future
 
     private final Map<String, AtomicInteger> requestCountsPerIpAddress = new ConcurrentHashMap<>();
 
-    private static final Logger logger = LoggerFactory.getLogger(FixedWindowFilter.class);
+    private static final Logger logger = LoggerFactory.getLogger(FixedWindowCounterFilter.class);
 
     // Maximum requests allowed per minute
     private static final int MAX_REQUESTS_PER_MINUTE = 5;
