@@ -11,8 +11,13 @@ public class testController {
         return "request Successfull for fixed Window, reached controller!";
     }
 
+    @GetMapping("api/v1/slidingWindowCounter/test")
+    public String testSlidingWindowCounterRateLimiting() {
+        return "request Successfull for Sliding Window Counter, reached controller!";
+    }
+
     @GetMapping("api/v1/slidingWindowLog/test")
     public String testSlidingWindowLogRateLimiting() {
-        return "request Successfull fr Sliding Window, reached controller!";
+        return "request Successfull for Sliding Window Log, reached controller!";
     }
 }

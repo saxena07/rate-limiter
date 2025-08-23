@@ -1,22 +1,5 @@
 package com.example.rate_limiter.filter;
 
-/*
-Concept: Keep timestamps of each request and check the last X seconds dynamically.
-
-How it works:
-Maintain a log (list) of request timestamps.
-Remove timestamps older than the time window.
-If count exceeds limit, deny request.
-
-Use case: Accurate per-user tracking over a moving time window.
-
-Pros: Fairer than fixed window.
-
-Cons: High memory usage for many requests (stores all timestamps).
-
-Example in real life: Chat systems preventing more than N messages in a rolling 10-second window.
-*/
-
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,8 +13,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+//*     Concept: Keep timestamps of each request and check the last X seconds dynamically.
+//*
+//*     How it works:
+//*     Maintain a log (list) of request timestamps.
+//*     Remove timestamps older than the time window.
+//*     If count exceeds limit, deny request.
+//*
+//*     Use case: Accurate per-user tracking over a moving time window.
+//*
+//*     Pros: Fairer than fixed window.
+//*
+//*     Cons: High memory usage for many requests (stores all timestamps).
+//*
+//*     Example in real life: Chat systems preventing more than N messages in a rolling 10-second window.
 
 public class SlidingWindowLogFilter implements Filter {
+
+//    TODO: handle multi-threading issues in future
 
     private final Map<String, List<Long>> requestTimestampsPerIpAddress = new ConcurrentHashMap<>();
 
