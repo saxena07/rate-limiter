@@ -20,4 +20,9 @@ public class testController {
     public String testSlidingWindowLogRateLimiting() {
         return "request Successfull for Sliding Window Log, reached controller!";
     }
+
+    @GetMapping("api/v1/tokenBucket/test")
+    public String testTokrnBucketRateLimiting() {
+        return "request Successfull for Token Bucket, reached controller!";
+    }
 }
