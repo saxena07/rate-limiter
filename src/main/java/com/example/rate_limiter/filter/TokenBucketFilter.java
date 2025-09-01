@@ -11,6 +11,25 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+//*    Concept:
+//*    Imagine a bucket that slowly fills with tokens at a fixed rate.
+//*    To make a request, you need a token. If no token, request is denied.
+//*
+//*    How it works:
+//*    Tokens are added at a constant rate until the bucket is full.
+//*    A request takes one token immediately.
+//*    Can handle bursts if enough tokens are saved.
+//*
+//*    Use case: Allows bursts but keeps the average rate under control.
+//*
+//*    Pros:
+//*    Supports burst traffic.
+//*    Easy to tune for average + peak rate.
+//*
+//*    Cons: Slightly more complex than Leaky Bucket.
+//*
+//*    Example in real life: API services where small bursts are allowed but not sustained flooding.
+
 public class TokenBucketFilter implements Filter {
 
 //    TODO: Implement max tokens limit in future and introduce multi-threading issues
