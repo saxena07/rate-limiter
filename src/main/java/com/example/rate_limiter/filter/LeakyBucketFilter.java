@@ -58,12 +58,14 @@ public class LeakyBucketFilter implements Filter {
     // optional pool to execute user requests (invoked inside AsyncContext.start or worker)
     private final ExecutorService executorService;
 
+//?    CONSTRUCTOR
     public LeakyBucketFilter(int bucketCapacity, int leakRatePerSecond, long asyncTimeoutMillis) {
-        this.bucketCapacity = bucketCapacity;
+        this.bucketCapacity = bucketCapacity; // queue capacity
         this.leakRatePerSecond = leakRatePerSecond;
         this.asyncTimeoutMillis = asyncTimeoutMillis;
 
         // Single scheduler thread is enough because each run we may drain many buckets; tune if needed.
+//        ? scheduler for draining buckets
         this.scheduler = Executors.newScheduledThreadPool(1, runnable -> {
             Thread t = new Thread(runnable, "leaky-bucket-scheduler");
             t.setDaemon(true);
@@ -71,6 +73,7 @@ public class LeakyBucketFilter implements Filter {
         });
 
         // Worker pool for executing request work after leak; runs chain.doFilter in container threads
+//!        NO WORK DOING IN THIS CODE
         this.executorService = Executors.newFixedThreadPool(
                 Math.max(2, Runtime.getRuntime().availableProcessors()),
                 runnable -> {
@@ -138,61 +141,6 @@ public class LeakyBucketFilter implements Filter {
         Filter.super.destroy();
     }
 
-    /**
-     * Task wrapping the AsyncContext and FilterChain to call chain.doFilter when executed.
-     * We store the AsyncContext (which holds request/response), and when run we call
-     * chain.doFilter(ctx.getRequest(), ctx.getResponse()) inside AsyncContext.start to
-     * get a container-managed thread.
-     */
-    private static final class RequestTask implements Runnable {
-        final AsyncContext asyncContext;
-        final FilterChain chain;
-
-        RequestTask(AsyncContext asyncContext, FilterChain chain) {
-            this.asyncContext = Objects.requireNonNull(asyncContext);
-            this.chain = Objects.requireNonNull(chain);
-        }
-
-        @Override
-        public void run() {
-            try {
-                // Start processing inside container managed thread pool for async
-                asyncContext.start(() -> {
-                    try {
-                        ServletRequest req = asyncContext.getRequest();
-                        ServletResponse resp = asyncContext.getResponse();
-                        // Run the filter chain (your application servlet will handle the request)
-                        chain.doFilter(req, resp);
-                    } catch (Throwable ex) {
-                        log.error("Error while processing request from bucket", ex);
-                        try {
-                            ((HttpServletResponse) asyncContext.getResponse()).setStatus(500);
-                        } catch (Exception ignored) {}
-                    } finally {
-                        try {
-                            asyncContext.complete();
-                        } catch (Exception ignored) {}
-                    }
-                });
-            } catch (Throwable ex) {
-                log.error("Failed to dispatch async request", ex);
-                try { asyncContext.complete(); } catch (Exception ignored) {}
-            }
-        }
-    }
-
-    // Shutdown helper
-    public void shutdown() {
-        try {
-            scheduler.shutdown();
-            scheduler.awaitTermination(2, TimeUnit.SECONDS);
-        } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
-        try {
-            executorService.shutdown();
-            executorService.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
-    }
-
     // Resolve client IP — be careful when behind proxies; prefer X-Forwarded-For handling in prod
     private String  resolveClientKey(HttpServletRequest req) {
         String xf = req.getHeader("X-Forwarded-For");
@@ -250,5 +198,48 @@ public class LeakyBucketFilter implements Filter {
         }
 
         int size() { return queued.get(); }
+    }
+
+    /**
+     * Task wrapping the AsyncContext and FilterChain to call chain.doFilter when executed.
+     * We store the AsyncContext (which holds request/response), and when run we call
+     * chain.doFilter(ctx.getRequest(), ctx.getResponse()) inside AsyncContext.start to
+     * get a container-managed thread.
+     */
+    private static final class RequestTask implements Runnable {
+        final AsyncContext asyncContext;
+        final FilterChain chain;
+
+        RequestTask(AsyncContext asyncContext, FilterChain chain) {
+            this.asyncContext = Objects.requireNonNull(asyncContext);
+            this.chain = Objects.requireNonNull(chain);
+        }
+
+        @Override
+        public void run() {
+            try {
+                // Start processing inside container managed thread pool for async
+                asyncContext.start(() -> {
+                    try {
+                        ServletRequest req = asyncContext.getRequest();
+                        ServletResponse resp = asyncContext.getResponse();
+                        // Run the filter chain (your application servlet will handle the request)
+                        chain.doFilter(req, resp);
+                    } catch (Throwable ex) {
+                        log.error("Error while processing request from bucket", ex);
+                        try {
+                            ((HttpServletResponse) asyncContext.getResponse()).setStatus(500);
+                        } catch (Exception ignored) {}
+                    } finally {
+                        try {
+                            asyncContext.complete();
+                        } catch (Exception ignored) {}
+                    }
+                });
+            } catch (Throwable ex) {
+                log.error("Failed to dispatch async request", ex);
+                try { asyncContext.complete(); } catch (Exception ignored) {}
+            }
+        }
     }
 }
